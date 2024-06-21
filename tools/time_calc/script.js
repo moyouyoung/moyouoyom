@@ -42,45 +42,46 @@ function showCurrentJulian() {
     document.getElementById('currentJulianDay').innerText = `Current Julian Day: ${JD.toFixed(9)}`;
 }
 
-function handleFile() {
+function convertnd2() {
     const fileInput = document.getElementById('fileInput');
     const timezone = document.getElementById('timezone').value;
+    
+
+    if (!fileInput.files.length) {
+        alert('Please select a file first!');
+        return;
+    }
+
     const file = fileInput.files[0];
 
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            const content = event.target.result;
-            const julianDay = parseFloat(content.trim());
-            const Z = Math.floor(julianDay + 0.5);
-            const F = julianDay + 0.5 - Z;
-            let A = Z;
-            if (Z >= 2299161) {
-                const alpha = Math.floor((Z - 1867216.25) / 36524.25);
-                A += 1 + alpha - Math.floor(alpha / 4);
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        const lines = event.target.result.split('\n');
+        //let resultHtml = '<h2>Search Results:</h2>';
+        let searchResult = '';
+        lines.forEach((line, index) => {
+            if (line.includes('dTimeAbsolute') || line.includes('timestamp')) {
+                //resultHtml += `<p>Line ${index + 1}: ${line}</p>`;
+                const resultLine = `Line ${index + 1}: ${line}\n`;
+                searchResult += resultLine;
             }
-            const B = A + 1524;
-            const C = Math.floor((B - 122.1) / 365.25);
-            const D = Math.floor(365.25 * C);
-            const E = Math.floor((B - D) / 30.6001);
-            const day = B - D - Math.floor(30.6001 * E) + F;
-            let month = E < 14 ? E - 1 : E - 13;
-            const year = month > 2 ? C - 4716 : C - 4715;
+        });
+        if (searchResult) {
+            const blob = new Blob([searchResult], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const downloadLink = document.getElementById('nd2link');
+            downloadLink.href = url;
+            downloadLink.download = 'search_result.txt';
+            downloadLink.style.display = 'block';
+            downloadLink.textContent = 'Download Results';
+        }
+    };
 
-            const dayFraction = day % 1;
-            const hours = Math.floor(dayFraction * 24);
-            const minutes = Math.floor((dayFraction * 24 - hours) * 60);
-            const seconds = Math.floor(((dayFraction * 24 - hours) * 60 - minutes) * 60);
-            const milliseconds = Math.floor((((dayFraction * 24 - hours) * 60 - minutes) * 60 - seconds) * 1000);
-            const microseconds = Math.floor((dayFraction * 86400000 - hours * 3600000 - minutes * 60000 - seconds * 1000 - milliseconds) * 1000);
 
-            const date = new Date(Date.UTC(year, month - 1, Math.floor(day), hours, minutes, seconds, milliseconds));
-            const formattedDate = convertToTimeZone(date, timezone);
+    reader.onerror = function(event) {
+        alert('Error reading file: ' + event.target.error.name);
+    };
 
-            document.getElementById('fileOutput').innerText = `Gregorian Date: ${formattedDate}`;
-        };
-        reader.readAsText(file);
-    } else {
-        document.getElementById('fileOutput').innerText = 'Please select a file.';
-    }
+    reader.readAsText(file);
+    
 }

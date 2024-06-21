@@ -38,6 +38,17 @@
             <button onclick="showCurrentJulian()">Show Current Julian Day</button>
             <p id="currentJulianDay"></p>
         </div>
+        <div class="nd2-conversion">
+            <h2>Read nd2 info txt and output absolute time</h2>
+            <p>Pleas use <a href="../imagej_macros/SaveALL_info.ijm">this macro</a> to save the info txt from nd2 file. <br> You may also need <a href="https://imagej.net/software/fiji/">Fiji</a> and <a href="https://imagej.net/formats/bio-formats">Bio-Formats</a> plugin</p>
+            <input type="file" id="fileInput" />
+            <button onclick="convertnd2()">Upload and convert it!</button>
+            <a id="nd2link" style="display: none;">Download converted file</a>
+        </div>
+        <div class="explanation">
+            <h2>Explanation</h2>
+            <p>Note for time zone if you are first time using this. <br>This was suppposed to be an explanation.</p>
+        </div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/luxon/2.3.0/luxon.min.js"></script>
     <script src="script.js"></script>
