@@ -59,15 +59,32 @@ function convertnd2() {
         const lines = event.target.result.split('\n');
         //let resultHtml = '<h2>Search Results:</h2>';
         let searchResult = '';
+        const regex_timeab = /(dTimeAbsolute)\s*=\s*(\d+)/;
+        const regex_stamp = /(timestamp)\s*#(\d+)\s*=\s*([\d.]+)/;
+        let countframe = 0;
+        const framenum = [];
+        const frametime = [];
         lines.forEach((line, index) => {
-            if (line.includes('dTimeAbsolute') || line.includes('timestamp')) {
+            const match1 = line.match(regex_timeab);
+            if (match1) {
                 //resultHtml += `<p>Line ${index + 1}: ${line}</p>`;
-                const resultLine = `Line ${index + 1}: ${line}\n`;
-                searchResult += resultLine;
+                const abtime = match1[2];
+            }
+            const match2 = line.match(regex_stamp);
+            if (match2) {
+                framenum[countframe] = match2[2];
+                frametime[countframe] = match2[3];
+                countframe++; 
             }
         });
-        if (searchResult) {
-            const blob = new Blob([searchResult], { type: 'text/plain' });
+
+        
+        if (framenum.length) {
+            let resultcsv = 'Frame,Time\n';
+            for (let i = 0; i < framenum.length; i++) {
+                resultcsv += `${framenum[i]},${frametime[i]}\n`;
+            }
+            const blob = new Blob([resultcsv], { type: 'text/csv' });
             const url = URL.createObjectURL(blob);
             const downloadLink = document.getElementById('nd2link');
             downloadLink.href = url;
