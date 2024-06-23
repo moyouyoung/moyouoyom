@@ -40,8 +40,10 @@
         </div>
         <div class="nd2-conversion">
             <h2>Read nd2 info txt and output absolute time</h2>
-            <p>You can use <a href="../imagej_macros/SaveALL_info.ijm">this macro</a> to save the info txt from nd2 file. <br> You may also need <a href="https://imagej.net/software/fiji/">Fiji</a> and <a href="https://imagej.net/formats/bio-formats">Bio-Formats</a> plugin</p>
-            <input type="file" id="fileInput" />
+            <p>You can use <a href="../imagej_macros/SaveALL_info.ijm">this macro</a> to save the info txt from nd2 file. <br> The macro is based on <a href="https://imagej.net/software/fiji/">Fiji</a> and require <a href="https://imagej.net/formats/bio-formats">Bio-Formats</a> plugin.</p>
+            <p>Leave the box blank if no offset. </p>
+            <input type="file" id="fileInput" >
+            <input type="text" id="timeOffset" name="timeOffset" placeholder="yyyy-MM-dd HH:mm:ss.SSS">
             <button onclick="convertnd2()">Upload and convert it!</button>
             <a id="nd2link" style="display: none;">Download converted file</a>
         </div>
@@ -50,7 +52,7 @@
             <p>Note for time zone if you are first time using this. <br>This was suppposed to be an explanation.</p>
         </div>
     </div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/luxon/2.3.0/luxon.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
