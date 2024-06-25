@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Make a good pipette</title>
+    </head>
+    <body>
+        <div id="content"></div>
+        <script src="https://cdn.jsdelivr.net/npm/marked@13.0.1/lib/marked.umd.min.js"></script>
+        <script>
+            fetch('pipette.md')
+                .then(response => response.text())
+                .then(text => {
+                    document.getElementById('content').innerHTML = marked(text);
+                });
+        </script>
+    </body>
+</html>
