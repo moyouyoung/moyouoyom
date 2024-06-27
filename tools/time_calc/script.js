@@ -59,7 +59,7 @@ function showCurrentJulian() {
 }
 
 function convertnd2() {
-    const fileInput = document.getElementById('fileInput');
+    const fileInput = document.getElementById('nd2Input');
     const timeOffset = document.getElementById('timeOffset').value;
     const timezone = document.getElementById('timezone').value;
     
@@ -95,7 +95,6 @@ function convertnd2() {
                 countframe++; 
             }
         });
-
         
         if (framenum.length) {
             if (timeOffset) {
@@ -142,4 +141,91 @@ function convertnd2() {
 
     reader.readAsText(file);
     
+}
+
+function convertflowez() {
+    const fileInput = document.getElementById('flowezInput');
+    const timeOffset = document.getElementById('timeOffset').value;
+    const timezone = document.getElementById('timezone').value;
+
+    if (!fileInput.files.length) {
+        alert('Please select a file first!');
+        return;
+    }
+    
+    const file = fileInput.files[0];
+
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        const lines = event.target.result.split('\n');
+        const regex_flowez = /([^;]+);([-+]?[0-9]*\.?[0-9]+);.*/;
+        let counttime = 0;
+        const timeinsec = [];
+        const pressure = [];
+        lines.forEach((line,index) => {
+            const match = line.match(regex_flowez);
+            if(match) {
+                timeinsec[counttime] = match[1];
+                pressure[counttime] = match[2];
+                counttime++;
+            }
+        });
+        
+        if (timeinsec.length) {
+            let resultcsv = 'Time,Pressure\n';
+            const { DateTime } = luxon;
+            if (timeOffset) {
+                dtOffset = DateTime.fromFormat(timeOffset, 'yyyy-MM-dd HH:mm:ss.SSS', { zone: timezone });
+            } else {
+                dtOffset = DateTime.fromFormat(timeinsec[0], 'yyyy-MM-dd HH:mm:ss.SSS', { zone: timezone });
+            }
+
+            for (let i = 0; i < timeinsec.length; i++) {
+                dtFlowez = DateTime.fromFormat(timeinsec[i], 'yyyy-MM-dd HH:mm:ss.SSS', { zone: timezone });
+                let diff = dtFlowez.diff(dtOffset).milliseconds;
+                diff = diff/1000;
+                resultcsv += `${diff.toString()},${pressure[i]}\n`;
+            }
+            const blob = new Blob([resultcsv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const downloadLink = document.getElementById('flowezlink');
+            downloadLink.href = url;
+            downloadLink.download = file.name.replace(/\.[^/.]+$/, "") + '_raw.csv';
+            downloadLink.style.display = 'block';
+            downloadLink.textContent = 'Download flowez Results';
+
+
+
+        }
+    }
+    reader.onerror = function(event) {
+        alert('Error reading file: ' + event.target.error.name);
+    };
+
+    reader.readAsText(file);
+
+}
+
+function convertpatch() {
+    const fileInput = document.getElementById('patchInput');
+    const timeOffset = document.getElementById('timeOffset').value;
+    const timezone = document.getElementById('timezone').value;
+
+    if (!fileInput.files.length) {
+        alert('Please select a file first!');
+        return;
+    }
+    
+    const file = fileInput.files[0];
+
+    const reader = new FileReader();
+    reader.onload = function(event) {
+
+    }
+    reader.onerror = function(event) {
+        alert('Error reading file: ' + event.target.error.name);
+    };
+
+    reader.readAsText(file);
+
 }

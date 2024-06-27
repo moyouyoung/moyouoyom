@@ -42,10 +42,16 @@
             <h2>Read nd2 info txt and output absolute time</h2>
             <p>You can use <a href="../imagej_macros/SaveALL_info.ijm">this macro</a> to save the info txt from nd2 file. <br> The macro is based on <a href="https://imagej.net/software/fiji/">Fiji</a> and require <a href="https://imagej.net/formats/bio-formats">Bio-Formats</a> plugin.</p>
             <p>Leave the box blank if no offset. </p>
-            <input type="file" id="fileInput" >
+            <input type="file" id="nd2Input">
             <input type="text" id="timeOffset" name="timeOffset" placeholder="yyyy-MM-dd HH:mm:ss.SSS">
             <button onclick="convertnd2()">Upload and convert it!</button>
-            <a id="nd2link" style="display: none;">Download converted file</a>
+            <a id="nd2link" style="display: none;">Download nd2 converted file</a>
+            <br>
+            <h2>Read flowez file and output Δtime,pressure</h2>
+            <p>It uses the previous offset as default, if not, it will use the first time as offset.</p>
+            <input type="file" id="flowezInput">
+            <button onclick="convertflowez()">Convert FlowEZ</button>
+            <a id="flowezlink" style="display: none;">Download FlowEZ converted file</a>
         </div>
         <div class="explanation">
             <h2>Explanation</h2>
