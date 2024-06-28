@@ -3,14 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>File Upload and Keyword Search</title>
+    <title>Get Last Modified Date</title>
 </head>
 <body>
-    <h1>Upload a Text File and Search for Keywords</h1>
+    <h1>Select a file to see its last modified date</h1>
     <input type="file" id="fileInput" />
-    <button id="uploadButton">Upload and Search</button>
-    <div id="result"></div>
+    <p id="output"></p>
 
-    <script src="script_test.js"></script>
+    <script>
+        document.getElementById('fileInput').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            
+            if (file) {
+                const lastModifiedDate = new Date(file.lastModified);
+                const output = document.getElementById('output');
+                output.textContent = "Last Modified Date: " + lastModifiedDate;
+                console.log("Last Modified Date:", lastModifiedDate);
+            } else {
+                console.log("No file selected");
+            }
+        });
+    </script>
 </body>
 </html>

@@ -207,7 +207,7 @@ function convertflowez() {
 }
 
 function convertpatch() {
-    const fileInput = document.getElementById('patchInput');
+    const fileInput = document.getElementById('patchPreInput');
     const timeOffset = document.getElementById('timeOffset').value;
     const timezone = document.getElementById('timezone').value;
 
@@ -217,11 +217,53 @@ function convertpatch() {
     }
     
     const file = fileInput.files[0];
+    
+    const { DateTime } = luxon;
+
 
     const reader = new FileReader();
     reader.onload = function(event) {
+        const lines = event.target.result.split('\n');
+        regex_patchP = /(.+?) -> (-?\d+) .*/;
+        let counttime = 0; 
+        const timeinsec = [];
+        const pressure = [];
+        lines.forEach((line) => {
+            const match = line.match(regex_patchP);
+            if (match) {
+                timeinsec[counttime] = match[1];
+                pressure[counttime] = match[2];
+                counttime++;
+            }
+        });
+
+        if (timeinsec.length) {
+            let resultcsv = 'Time,Pressure\n';
+            if (timeOffset) {
+                dtrawOffset = DateTime.fromFormat(timeOffset, 'yyyy-MM-dd HH:mm:ss.SSS', { zone: timezone });
+                offstring = dtrawOffset.toFormat('HH:mm:ss.SSS').toString();
+                dtOffset = DateTime.fromFormat(offstring, 'HH:mm:ss.SSS');
+            } else {
+                dtOffset = DateTime.fromFormat(timeinsec[0], 'HH:mm:ss.SSS');
+            }
+
+            for (let i=0; i<timeinsec.length; i++) {
+                dtpatchP = DateTime.fromFormat(timeinsec[i], 'HH:mm:ss.SSS');
+                let diff = dtpatchP.diff(dtOffset).milliseconds;
+                diff = diff/1000;
+                resultcsv += `${diff.toString()},${pressure[i]}\n`;
+            }
+            const blob = new Blob([resultcsv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const downloadLink = document.getElementById('patchPreLink');
+            downloadLink.href = url;
+            downloadLink.download = file.name.replace(/\.[^/.]+$/, "") + '_raw.csv';
+            downloadLink.style.display = 'block';
+            downloadLink.textContent = 'Download patch pressure Results';
+        }
 
     }
+
     reader.onerror = function(event) {
         alert('Error reading file: ' + event.target.error.name);
     };
