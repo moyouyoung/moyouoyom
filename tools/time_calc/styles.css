@@ -1,39 +1,49 @@
 body {
     font-family: Arial, sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
     margin: 0;
     background-color: #f4f4f4;
+    padding: 2rem 0;
+    min-height: 100vh;
 }
 
 .container {
+    width: 90%;
+    max-width: 800px;
+    margin: 0 auto;
     background: white;
-    padding: 20px;
+    padding: 30px;
     border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    text-align: center;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
 }
 
-.converter {
-    margin-top: 20px;
+.converter, .current-time, .nd2-conversion, .explanation {
+    border-bottom: 1px solid #eee;
+    padding-bottom: 20px;
+    margin-bottom: 20px;
 }
 
-input {
+.converter:last-child, .current-time:last-child, .nd2-conversion:last-child, .explanation:last-child {
+    border-bottom: none;
+}
+
+input, select {
     margin-top: 10px;
-    padding: 8px;
-    width: 200px;
+    padding: 10px;
+    width: 100%;
+    max-width: 300px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
 }
 
 button {
-    margin-top: 10px;
+    margin-top: 15px;
     padding: 10px 20px;
     background-color: #f3774d;
     color: white;
     border: none;
     border-radius: 5px;
     cursor: pointer;
+    transition: background-color 0.3s;
 }
 
 button:hover {
@@ -43,4 +53,19 @@ button:hover {
 p {
     margin-top: 20px;
     font-size: 1.2em;
+}
+
+
+a[id$="link"] {
+    display: inline-block;
+    margin-top: 15px;
+    padding: 8px 16px;
+    background-color: #4CAF50;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+}
+
+a[id$="link"]:hover {
+    background-color: #45a049;
 }
