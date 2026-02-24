@@ -1,13 +1,647 @@
 <!DOCTYPE html>
-
-<html>
+<html lang="en">
 <head>
-    This is supposed to be a image gallery. 
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gallery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=DM+Mono:wght@300&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f5f4f1;
+      --fg: #1a1a1a;
+      --muted: #9a9690;
+      --accent: #c8b89a;
+      --gap: clamp(12px, 2vw, 24px);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: 'DM Mono', monospace;
+      font-weight: 300;
+      min-height: 100vh;
+      cursor: crosshair;
+    }
+
+    /* Header */
+    header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 28px 40px;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      mix-blend-mode: multiply;
+    }
+
+    .site-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      font-size: clamp(1.1rem, 2vw, 1.4rem);
+      letter-spacing: 0.08em;
+      color: var(--fg);
+      text-decoration: none;
+    }
+
+    .site-meta {
+      font-size: 0.65rem;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    /* Gallery grid */
+    main {
+      padding-top: 100px;
+      padding-bottom: 80px;
+      padding-left: var(--gap);
+      padding-right: var(--gap);
+    }
+
+    .gallery-grid {
+      columns: 1;
+      column-gap: var(--gap);
+    }
+
+    @media (min-width: 600px) { .gallery-grid { columns: 2; } }
+    @media (min-width: 900px) { .gallery-grid { columns: 3; } }
+    @media (min-width: 1400px) { .gallery-grid { columns: 4; } }
+
+    .photo-item {
+      break-inside: avoid;
+      margin-bottom: var(--gap);
+      overflow: hidden;
+      position: relative;
+      background: #e8e6e0;
+      cursor: zoom-in;
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    .photo-item.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .photo-item img {
+      width: 100%;
+      height: auto;
+      display: block;
+      transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                  filter 0.4s ease;
+      filter: grayscale(8%) brightness(0.98);
+      will-change: transform;
+    }
+
+    .photo-item:hover img {
+      transform: scale(1.03);
+      filter: grayscale(0%) brightness(1);
+    }
+
+    .photo-overlay {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      padding: 40px 16px 14px;
+      background: linear-gradient(transparent, rgba(20,18,16,0.45));
+      opacity: 0;
+      transition: opacity 0.4s ease;
+      pointer-events: none;
+    }
+
+    .photo-item:hover .photo-overlay { opacity: 1; }
+
+    .photo-filename {
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+      color: rgba(245,244,241,0.85);
+      text-transform: uppercase;
+    }
+
+    /* Loading skeleton */
+    .photo-item.loading {
+      min-height: 200px;
+      opacity: 1;
+      transform: none;
+    }
+
+    .photo-item.loading::after {
+      content: '';
+      display: block;
+      height: 200px;
+      background: linear-gradient(90deg, #e8e6e0 25%, #dedad3 50%, #e8e6e0 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* Lightbox */
+    #lightbox {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: rgba(20, 18, 16, 0.96);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.35s ease;
+    }
+
+    #lightbox.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    #lightbox img {
+      max-width: 92vw;
+      max-height: 90vh;
+      object-fit: contain;
+      opacity: 0;
+      transform: scale(0.96);
+      transition: opacity 0.4s ease 0.1s, transform 0.4s ease 0.1s;
+      cursor: zoom-out;
+    }
+
+    #lightbox.open img {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    #lightbox-close {
+      position: absolute;
+      top: 28px; right: 32px;
+      background: none;
+      border: none;
+      color: rgba(245,244,241,0.6);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    #lightbox-close:hover { color: rgba(245,244,241,1); }
+
+    #lightbox-info {
+      position: absolute;
+      bottom: 32px; left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+    }
+
+    #lightbox-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: 1rem;
+      color: rgba(245,244,241,0.7);
+      letter-spacing: 0.04em;
+    }
+
+    #lightbox-nav {
+      position: absolute;
+      top: 50%; left: 0; right: 0;
+      transform: translateY(-50%);
+      display: flex;
+      justify-content: space-between;
+      padding: 0 20px;
+      pointer-events: none;
+    }
+
+    .nav-btn {
+      pointer-events: all;
+      background: none;
+      border: none;
+      color: rgba(245,244,241,0.5);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      cursor: pointer;
+      padding: 12px;
+      transition: color 0.2s;
+    }
+
+    .nav-btn:hover { color: rgba(245,244,241,1); }
+
+    /* Loading indicator in lightbox */
+    #lightbox-loader {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .spinner {
+      width: 24px; height: 24px;
+      border: 1px solid rgba(245,244,241,0.2);
+      border-top-color: rgba(245,244,241,0.8);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: none;
+    }
+
+    #lightbox.loading-full .spinner { display: block; }
+    #lightbox.loading-full img { opacity: 0.3; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Footer */
+    footer {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      padding: 16px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+    }
+
+    .photo-count {
+      font-size: 0.6rem;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 120px 40px;
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: 1.2rem;
+      color: var(--muted);
+    }
+
+    /* ── Filter bar ────────────────────────────────────────────────────────── */
+    #filter-bar {
+      position: fixed;
+      top: 72px; left: 0; right: 0;
+      z-index: 90;
+      padding: 0 40px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      /* Fade edges on mobile */
+      -webkit-mask-image: linear-gradient(to right, transparent 0, black 32px, black calc(100% - 32px), transparent 100%);
+      mask-image: linear-gradient(to right, transparent 0, black 32px, black calc(100% - 32px), transparent 100%);
+      opacity: 0;
+      transform: translateY(-4px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      pointer-events: none;
+    }
+
+    #filter-bar.ready {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: all;
+    }
+
+    #filter-bar::-webkit-scrollbar { display: none; }
+
+    .filter-pill {
+      flex-shrink: 0;
+      background: none;
+      border: 1px solid var(--accent);
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      font-weight: 300;
+      font-size: 0.6rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 5px 14px;
+      cursor: pointer;
+      transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .filter-pill:hover {
+      border-color: var(--fg);
+      color: var(--fg);
+    }
+
+    .filter-pill.active {
+      background: var(--fg);
+      border-color: var(--fg);
+      color: var(--bg);
+    }
+
+    /* Tag badge on photo overlay */
+    .photo-tags {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+
+    .photo-tag {
+      font-size: 0.52rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(245,244,241,0.6);
+      border: 1px solid rgba(245,244,241,0.3);
+      padding: 1px 6px;
+    }
+
+    /* Photo hide/show during filtering */
+    .photo-item {
+      transition: opacity 0.6s ease, transform 0.6s ease, max-height 0.4s ease;
+    }
+
+    .photo-item.hidden {
+      opacity: 0 !important;
+      pointer-events: none;
+      max-height: 0;
+      margin-bottom: 0;
+      overflow: hidden;
+    }
+
+    /* Adjust main top padding to accommodate filter bar */
+    main {
+      padding-top: 120px !important;
+    }
+
+    /* Lightbox tag display */
+    #lightbox-tags {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    .lb-tag {
+      font-size: 0.55rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(245,244,241,0.45);
+      border: 1px solid rgba(245,244,241,0.2);
+      padding: 2px 8px;
+    }
+  </style>
 </head>
-
 <body>
-    <p>I am still thinking of the best way to demonstate my photos. </p>
-    <p>I am expecting to do this after I graduate. I hope</p>
-</body>
 
+<header>
+  <a class="site-title" href="/">Gallery</a>
+  <span class="site-meta" id="header-count">Loading…</span>
+</header>
+
+<div id="filter-bar">
+  <!-- Pills injected by JS -->
+</div>
+
+<main>
+  <div class="gallery-grid" id="gallery"></div>
+</main>
+
+<div id="lightbox">
+  <button id="lightbox-close">Close ×</button>
+  <div id="lightbox-loader"><div class="spinner"></div></div>
+  <img id="lightbox-img" src="" alt="" />
+  <div id="lightbox-nav">
+    <button class="nav-btn" id="btn-prev">← Prev</button>
+    <button class="nav-btn" id="btn-next">Next →</button>
+  </div>
+  <div id="lightbox-info">
+    <div id="lightbox-name"></div>
+    <div id="lightbox-tags"></div>
+  </div>
+</div>
+
+<footer>
+  <span class="photo-count" id="footer-count"></span>
+</footer>
+
+<script>
+  // ─── CONFIG ────────────────────────────────────────────────────────────────
+  const WORKER_URL = '/gallery-api';
+
+  // ─── STATE ─────────────────────────────────────────────────────────────────
+  let allPhotos = [];       // full list from Worker
+  let filteredPhotos = [];  // currently shown (after tag filter)
+  let activeTag = 'all';
+  let currentIndex = 0;     // index within filteredPhotos
+
+  // ─── FETCH PHOTOS LIST ─────────────────────────────────────────────────────
+  async function loadPhotos() {
+    try {
+      const res = await fetch(`${WORKER_URL}/list`);
+      const data = await res.json();
+      allPhotos = data.images || [];
+      buildFilterBar();
+      applyFilter('all');
+    } catch (e) {
+      document.getElementById('gallery').innerHTML =
+        '<div class="empty-state">Could not load photos.<br>Check your Worker URL in index.html.</div>';
+      document.getElementById('header-count').textContent = 'Error';
+    }
+  }
+
+  // ─── BUILD FILTER BAR ──────────────────────────────────────────────────────
+  function buildFilterBar() {
+    const bar = document.getElementById('filter-bar');
+
+    // Collect all unique tags across photos
+    const tagSet = new Set();
+    allPhotos.forEach(p => (p.tags || []).forEach(t => tagSet.add(t)));
+    const tags = [...tagSet].sort();
+
+    bar.innerHTML = '';
+
+    // "All" pill always first
+    const allPill = makePill('all', 'All');
+    bar.appendChild(allPill);
+
+    tags.forEach(tag => bar.appendChild(makePill(tag, tag)));
+
+    // Show bar only when there are tags to filter by
+    if (tags.length > 0) {
+      requestAnimationFrame(() => bar.classList.add('ready'));
+    }
+  }
+
+  function makePill(tag, label) {
+    const btn = document.createElement('button');
+    btn.className = 'filter-pill' + (tag === activeTag ? ' active' : '');
+    btn.textContent = label;
+    btn.addEventListener('click', () => applyFilter(tag));
+    return btn;
+  }
+
+  // ─── FILTER LOGIC ──────────────────────────────────────────────────────────
+  function applyFilter(tag) {
+    activeTag = tag;
+
+    // Update pill states
+    document.querySelectorAll('.filter-pill').forEach(pill => {
+      pill.classList.toggle('active', pill.textContent.toLowerCase() === tag.toLowerCase()
+        || (tag === 'all' && pill.textContent === 'All'));
+    });
+
+    filteredPhotos = tag === 'all'
+      ? allPhotos
+      : allPhotos.filter(p => (p.tags || []).includes(tag));
+
+    renderGallery();
+  }
+
+  // ─── RENDER GALLERY ────────────────────────────────────────────────────────
+  function renderGallery() {
+    const grid = document.getElementById('gallery');
+    const count = filteredPhotos.length;
+    const total = allPhotos.length;
+
+    const countLabel = activeTag === 'all'
+      ? `${total} photo${total !== 1 ? 's' : ''}`
+      : `${count} / ${total}`;
+    document.getElementById('header-count').textContent = countLabel;
+    document.getElementById('footer-count').textContent = countLabel;
+
+    if (total === 0) {
+      grid.innerHTML = '<div class="empty-state">No photos yet.<br>Upload images to your R2 bucket.</div>';
+      return;
+    }
+
+    if (count === 0) {
+      grid.innerHTML = `<div class="empty-state">No photos tagged <em>${activeTag}</em>.</div>`;
+      return;
+    }
+
+    grid.innerHTML = '';
+
+    filteredPhotos.forEach((photo, i) => {
+      const item = document.createElement('div');
+      item.className = 'photo-item';
+      item.dataset.index = i;
+
+      const img = document.createElement('img');
+      img.src = `${WORKER_URL}/image/${encodeURIComponent(photo.key)}?size=medium`;
+      img.alt = photo.key;
+      img.loading = 'lazy';
+      img.decoding = 'async';
+
+      // Overlay: filename + tags
+      const overlay = document.createElement('div');
+      overlay.className = 'photo-overlay';
+
+      const tagsHtml = (photo.tags || []).length
+        ? `<div class="photo-tags">${photo.tags.map(t =>
+            `<span class="photo-tag">${t}</span>`).join('')}</div>`
+        : '';
+
+      overlay.innerHTML = `
+        <div class="photo-filename">${photo.key.split('/').pop()}</div>
+        ${tagsHtml}
+      `;
+
+      item.appendChild(img);
+      item.appendChild(overlay);
+      item.addEventListener('click', () => openLightbox(i));
+      grid.appendChild(item);
+    });
+
+    // Staggered fade-in via IntersectionObserver
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.05, rootMargin: '40px' });
+
+    document.querySelectorAll('.photo-item').forEach(el => observer.observe(el));
+  }
+
+  // ─── LIGHTBOX ──────────────────────────────────────────────────────────────
+  const lightbox = document.getElementById('lightbox');
+  const lbImg = document.getElementById('lightbox-img');
+  const lbName = document.getElementById('lightbox-name');
+  const lbTags = document.getElementById('lightbox-tags');
+
+  function openLightbox(index) {
+    currentIndex = index;
+    lightbox.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    loadFullImage(index);
+  }
+
+  function closeLightbox() {
+    lightbox.classList.remove('open', 'loading-full');
+    lbImg.src = '';
+    document.body.style.overflow = '';
+  }
+
+  function loadFullImage(index) {
+    const photo = filteredPhotos[index];
+    lightbox.classList.add('loading-full');
+    lbName.textContent = photo.key.split('/').pop();
+
+    // Render tags in lightbox
+    lbTags.innerHTML = (photo.tags || [])
+      .map(t => `<span class="lb-tag">${t}</span>`).join('');
+
+    const mediumUrl = `${WORKER_URL}/image/${encodeURIComponent(photo.key)}?size=medium`;
+    const fullUrl   = `${WORKER_URL}/image/${encodeURIComponent(photo.key)}?size=original`;
+
+    lbImg.src = mediumUrl;
+    lbImg.onload = () => {
+      lightbox.classList.remove('loading-full');
+      const full = new Image();
+      full.src = fullUrl;
+      full.onload = () => { lbImg.src = fullUrl; };
+    };
+  }
+
+  document.getElementById('lightbox-close').addEventListener('click', closeLightbox);
+  lightbox.addEventListener('click', e => { if (e.target === lightbox) closeLightbox(); });
+
+  document.getElementById('btn-prev').addEventListener('click', (e) => {
+    e.stopPropagation();
+    currentIndex = (currentIndex - 1 + filteredPhotos.length) % filteredPhotos.length;
+    loadFullImage(currentIndex);
+  });
+
+  document.getElementById('btn-next').addEventListener('click', (e) => {
+    e.stopPropagation();
+    currentIndex = (currentIndex + 1) % filteredPhotos.length;
+    loadFullImage(currentIndex);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (!lightbox.classList.contains('open')) return;
+    if (e.key === 'Escape') closeLightbox();
+    if (e.key === 'ArrowLeft') {
+      currentIndex = (currentIndex - 1 + filteredPhotos.length) % filteredPhotos.length;
+      loadFullImage(currentIndex);
+    }
+    if (e.key === 'ArrowRight') {
+      currentIndex = (currentIndex + 1) % filteredPhotos.length;
+      loadFullImage(currentIndex);
+    }
+  });
+
+  // ─── INIT ──────────────────────────────────────────────────────────────────
+  loadPhotos();
+</script>
+</body>
 </html>
