@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Primer Checker</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0f0d;
+    --surface: #111a15;
+    --surface2: #172010;
+    --border: #1e3022;
+    --accent: #3dffa0;
+    --accent-dim: #1a7a4a;
+    --accent-glow: rgba(61, 255, 160, 0.15);
+    --warn: #ffb83d;
+    --danger: #ff4d6d;
+    --text: #d4f0e0;
+    --text-muted: #5a8a6a;
+    --mono: 'JetBrains Mono', monospace;
+    --serif: 'DM Serif Display', serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(61,255,160,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(61,255,160,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  header {
+    margin-bottom: 48px;
+  }
+
+  .tag {
+    display: inline-block;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid var(--accent-dim);
+    padding: 4px 10px;
+    border-radius: 2px;
+    margin-bottom: 16px;
+  }
+
+  h1 {
+    font-family: var(--serif);
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 400;
+    color: #fff;
+    line-height: 1.1;
+    margin-bottom: 12px;
+  }
+
+  h1 span {
+    color: var(--accent);
+  }
+
+  .subtitle {
+    color: var(--text-muted);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  /* DB selector */
+  .db-selector {
+    margin-bottom: 28px;
+  }
+
+  .db-selector label {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+
+  .db-options {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .db-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 8px 16px;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .db-btn.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-glow);
+  }
+
+  .db-btn:hover:not(.active) {
+    border-color: var(--accent-dim);
+    color: var(--text);
+  }
+
+  .db-btn .db-count {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-left: 6px;
+  }
+
+  .db-btn.active .db-count {
+    color: var(--accent-dim);
+  }
+
+  /* Input area */
+  .input-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+
+  .input-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+
+  .input-label {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .seq-stats {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .seq-stats span {
+    color: var(--accent);
+  }
+
+  textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.7;
+    padding: 14px;
+    resize: vertical;
+    min-height: 140px;
+    border-radius: 4px;
+    outline: none;
+    transition: border-color 0.2s;
+    letter-spacing: 0.05em;
+  }
+
+  textarea:focus {
+    border-color: var(--accent-dim);
+  }
+
+  textarea::placeholder {
+    color: var(--text-muted);
+    opacity: 0.5;
+  }
+
+  .controls {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .btn-search {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 12px 28px;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+
+  .btn-search:hover {
+    background: #fff;
+    box-shadow: 0 0 24px var(--accent-glow);
+  }
+
+  .btn-clear {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 12px 20px;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.2s;
+  }
+
+  .btn-clear:hover {
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+
+  .option-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .toggle {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    cursor: pointer;
+  }
+
+  .toggle input { display: none; }
+
+  .toggle-track {
+    position: absolute;
+    inset: 0;
+    background: var(--border);
+    border-radius: 10px;
+    transition: background 0.2s;
+  }
+
+  .toggle input:checked + .toggle-track {
+    background: var(--accent-dim);
+  }
+
+  .toggle-thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 14px;
+    height: 14px;
+    background: var(--text-muted);
+    border-radius: 50%;
+    transition: all 0.2s;
+  }
+
+  .toggle input:checked ~ .toggle-thumb {
+    left: 19px;
+    background: var(--accent);
+  }
+
+  /* Results */
+  .results-header {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .results-title {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .results-summary {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .results-summary .found {
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  .results-summary .not-found {
+    color: var(--text-muted);
+  }
+
+  .result-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 18px 20px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    animation: slideIn 0.25s ease forwards;
+    opacity: 0;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  .result-card.match {
+    border-color: var(--accent-dim);
+    background: linear-gradient(135deg, var(--surface) 0%, #0f2018 100%);
+  }
+
+  .result-card.no-match {
+    opacity: 0.5;
+  }
+
+  .result-card.no-match { animation-name: fadeIn; }
+  @keyframes fadeIn {
+    from { opacity: 0; } to { opacity: 0.5; }
+  }
+
+  .status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 4px;
+  }
+
+  .match .status-dot {
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+  }
+
+  .no-match .status-dot {
+    background: var(--border);
+  }
+
+  .result-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .primer-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+
+  .no-match .primer-name {
+    color: var(--text-muted);
+  }
+
+  .primer-seq {
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+    word-break: break-all;
+    line-height: 1.5;
+  }
+
+  .match .primer-seq {
+    color: var(--text);
+  }
+
+  .match-detail {
+    font-size: 11px;
+    margin-top: 8px;
+    color: var(--accent-dim);
+  }
+
+  .match-detail code {
+    background: var(--bg);
+    padding: 2px 6px;
+    border-radius: 2px;
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+
+  .result-badge {
+    flex-shrink: 0;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 2px;
+    margin-top: 2px;
+  }
+
+  .match .result-badge {
+    background: var(--accent-glow);
+    color: var(--accent);
+    border: 1px solid var(--accent-dim);
+  }
+
+  .no-match .result-badge {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+
+  .primer-length {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  /* Highlighted sequence */
+  .seq-highlight {
+    display: inline;
+  }
+
+  .seq-highlight mark {
+    background: rgba(61, 255, 160, 0.25);
+    color: var(--accent);
+    padding: 1px 0;
+    border-radius: 2px;
+  }
+
+  .seq-highlight mark.rc {
+    background: rgba(255, 184, 61, 0.2);
+    color: var(--warn);
+  }
+
+  /* Empty / intro states */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+  }
+
+  .empty-icon {
+    font-size: 36px;
+    margin-bottom: 16px;
+    opacity: 0.4;
+  }
+
+  .empty-state p {
+    font-size: 13px;
+    line-height: 1.7;
+  }
+
+  /* Divider */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 28px 0;
+  }
+
+  /* Sequence display */
+  .seq-display {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    line-height: 2;
+    word-break: break-all;
+    margin-top: 16px;
+    max-height: 180px;
+    overflow-y: auto;
+  }
+
+  .seq-display::-webkit-scrollbar { width: 4px; }
+  .seq-display::-webkit-scrollbar-track { background: var(--border); }
+  .seq-display::-webkit-scrollbar-thumb { background: var(--accent-dim); }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .legend-swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+  }
+
+  .swatch-fwd { background: rgba(61, 255, 160, 0.35); }
+  .swatch-rev { background: rgba(255, 184, 61, 0.3); }
+
+  /* Filter bar */
+  .filter-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .filter-chip {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 5px 12px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.15s;
+  }
+
+  .filter-chip.active {
+    border-color: var(--accent-dim);
+    color: var(--accent);
+    background: var(--accent-glow);
+  }
+
+  .filter-chip:hover:not(.active) {
+    border-color: var(--text-muted);
+  }
+
+  /* Match position annotation */
+  .position-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    font-size: 10px;
+    padding: 2px 8px;
+    margin-right: 6px;
+    margin-top: 4px;
+    color: var(--text-muted);
+  }
+
+  .position-tag.fwd { border-color: var(--accent-dim); color: var(--accent); }
+  .position-tag.rev { border-color: #7a5a1a; color: var(--warn); }
+
+  footer {
+    margin-top: 60px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--text-muted);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  footer a {
+    color: var(--accent-dim);
+    text-decoration: none;
+  }
+
+  footer a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="tag">🧬 Bioinformatics Tool</div>
+    <h1>Primer <span>Checker</span></h1>
+    <p class="subtitle">Scan your DNA sequence against universal primer databases to detect binding sites — forward and reverse complement.</p>
+  </header>
+
+  <!-- Database selector -->
+  <div class="db-selector">
+    <label>Primer Database</label>
+    <div class="db-options" id="dbOptions">
+      <button class="db-btn active" data-db="genewiz">
+        GENEWIZ Universal <span class="db-count">29 primers</span>
+      </button>
+      <!-- Future databases can be added here -->
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div class="input-panel">
+    <div class="input-header">
+      <span class="input-label">DNA Sequence Input</span>
+      <span class="seq-stats" id="seqStats">Length: <span>—</span></span>
+    </div>
+    <textarea
+      id="seqInput"
+      placeholder="Paste your DNA sequence here (FASTA format or raw sequence)&#10;&#10;e.g. ATGCGTAATACGACTCACTATAGGGAGAAACAGCTATGACCATG..."
+      spellcheck="false"
+    ></textarea>
+    <div class="controls">
+      <button class="btn-search" onclick="runSearch()">⌕ Search Primers</button>
+      <button class="btn-clear" onclick="clearAll()">Clear</button>
+      <label class="option-row">
+        <label class="toggle">
+          <input type="checkbox" id="toggleRC" checked>
+          <div class="toggle-track"></div>
+          <div class="toggle-thumb"></div>
+        </label>
+        Check reverse complement
+      </label>
+      <label class="option-row" style="margin-left:0">
+        <label class="toggle">
+          <input type="checkbox" id="toggleHide">
+          <div class="toggle-track"></div>
+          <div class="toggle-thumb"></div>
+        </label>
+        Hide non-matches
+      </label>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div id="resultsArea" style="display:none">
+    <hr class="divider">
+
+    <!-- Annotated sequence -->
+    <div id="seqDisplayWrap">
+      <div class="results-title" style="margin-bottom:10px">Annotated Sequence</div>
+      <div class="seq-display" id="seqDisplay"></div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-swatch swatch-fwd"></div>Forward match</div>
+        <div class="legend-item"><div class="legend-swatch swatch-rev"></div>Reverse complement match</div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="results-header">
+      <span class="results-title">Results</span>
+      <span class="results-summary" id="resultsSummary"></span>
+    </div>
+
+    <div class="filter-bar" id="filterBar">
+      <button class="filter-chip active" data-filter="all" onclick="applyFilter('all', this)">All</button>
+      <button class="filter-chip" data-filter="match" onclick="applyFilter('match', this)">Matches only</button>
+      <button class="filter-chip" data-filter="fwd" onclick="applyFilter('fwd', this)">Forward</button>
+      <button class="filter-chip" data-filter="rc" onclick="applyFilter('rc', this)">Reverse complement</button>
+    </div>
+
+    <div id="resultsList"></div>
+  </div>
+
+  <!-- Empty state -->
+  <div class="empty-state" id="emptyState">
+    <div class="empty-icon">🔬</div>
+    <p>Enter a DNA sequence above and click <strong>Search Primers</strong><br>to check for universal primer binding sites.</p>
+  </div>
+
+  <footer>
+    <span>Primer data: <a href="https://www.genewiz.com/public/resources/free-universal-primers" target="_blank">GENEWIZ Universal Primers</a></span>
+    <span>Matching: exact subsequence + reverse complement</span>
+  </footer>
+
+</div>
+
+<script>
+// ─── Primer Databases ────────────────────────────────────────────────────────
+const DATABASES = {
+  genewiz: {
+    name: "GENEWIZ Universal Primers",
+    source: "https://www.genewiz.com/public/resources/free-universal-primers",
+    primers: [
+      { name: "T7",          len: 20, seq: "TAATACGACTCACTATAGGG" },
+      { name: "T7 Term",     len: 19, seq: "GCTAGTTATTGCTCAGCGG" },
+      { name: "T3",          len: 20, seq: "ATTAACCCTCACTAAAGGGA" },
+      { name: "SP6",         len: 19, seq: "GATTTAGGTGACACTATAG" },
+      { name: "U6",          len: 20, seq: "GACTATCATATGCTTACCGT" },
+      { name: "BGHR",        len: 18, seq: "TAGAAGGCACAGTCGAGG" },
+      { name: "M13F",        len: 16, seq: "GTAAAACGACGGCCAG" },
+      { name: "M13R",        len: 17, seq: "CAGGAAACAGCTATGAC" },
+      { name: "M13-40FOR",   len: 17, seq: "GTTTTCCCAGTCACGAC" },
+      { name: "M13-48REV",   len: 20, seq: "CGGATAACAATTTCACACAG" },
+      { name: "CMV-Forward", len: 21, seq: "CGCAAATGGGCGGTAGGCGTG" },
+      { name: "5GEX",        len: 23, seq: "GGGCTGGCAAGCCACGTTTGGTG" },
+      { name: "3GEX",        len: 23, seq: "CCGGGAGCTGCATGTGTCAGAGG" },
+      { name: "pFastBacF",   len: 20, seq: "GGATTATTCATACCGTCCCA" },
+      { name: "pFastBacR",   len: 20, seq: "CAAATGTGGTATGGCTGATT" },
+      { name: "pBAD Forward",len: 20, seq: "ATGCCATAGCATTTTTATCC" },
+      { name: "pBAD Reverse",len: 18, seq: "GATTTAATCTGTATCAGG" },
+      { name: "EGFP-C-For",  len: 22, seq: "CATGGTCCTGCTGGAGTTCGTG" },
+      { name: "EGFP-C-REV",  len: 17, seq: "GTTCAGGGGGAGGTGTG" },
+      { name: "EGFP-N",      len: 21, seq: "CGTCGCCGTCCAGCTCGACCA" },
+      { name: "SV40pA-R",    len: 20, seq: "GAAATTTGTGATGCTATTGC" },
+      { name: "ATTB1",       len: 20, seq: "GTTTGTACAAAAAAGCAGGC" },
+      { name: "ATTB2",       len: 24, seq: "CCACTTTGTACAAGAAAGCTGGGT" },
+      { name: "ATTL1",       len: 24, seq: "CGCGTTAACGCTAGCATGGATCTC" },
+      { name: "ATTL2",       len: 20, seq: "CATCAGAGATTTTGAGACAC" },
+      { name: "ITS1",        len: 19, seq: "TCCGTAGGTGAACCTGCGG" },
+      { name: "ITS4",        len: 20, seq: "TCCTCCGCTTATTGATATGC" },
+      { name: "PJET1-2F",    len: 23, seq: "CGACTCACTATAGGGAGAGCGGC" },
+      { name: "PJET1-2R",    len: 24, seq: "AAGAACATCGATTTTCCATGGCAG" },
+    ]
+  }
+};
+
+let currentDb = 'genewiz';
+let lastResults = [];
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+function revComp(seq) {
+  const comp = { A:'T', T:'A', G:'C', C:'G', N:'N',
+                 a:'t', t:'a', g:'c', c:'g', n:'n' };
+  return seq.split('').reverse().map(b => comp[b] || b).join('');
+}
+
+function cleanSeq(raw) {
+  // Strip FASTA header lines and whitespace
+  return raw.replace(/^>.*$/mg, '').replace(/\s+/g, '').toUpperCase();
+}
+
+function findAllOccurrences(seq, pattern) {
+  const positions = [];
+  let idx = seq.indexOf(pattern);
+  while (idx !== -1) {
+    positions.push(idx);
+    idx = seq.indexOf(pattern, idx + 1);
+  }
+  return positions;
+}
+
+// ─── Sequence Stats ───────────────────────────────────────────────────────────
+document.getElementById('seqInput').addEventListener('input', function() {
+  const clean = cleanSeq(this.value);
+  const el = document.getElementById('seqStats').querySelector('span');
+  el.textContent = clean.length ? `${clean.length.toLocaleString()} bp` : '—';
+});
+
+// ─── Search ───────────────────────────────────────────────────────────────────
+function runSearch() {
+  const raw = document.getElementById('seqInput').value.trim();
+  if (!raw) { alert('Please enter a DNA sequence.'); return; }
+
+  const seq = cleanSeq(raw);
+  if (!seq) { alert('No valid DNA sequence found.'); return; }
+
+  const checkRC = document.getElementById('toggleRC').checked;
+  const db = DATABASES[currentDb];
+  const results = [];
+
+  for (const primer of db.primers) {
+    const fwdHits = findAllOccurrences(seq, primer.seq);
+    const rcSeq = revComp(primer.seq);
+    const rcHits = checkRC ? findAllOccurrences(seq, rcSeq) : [];
+
+    results.push({
+      primer,
+      fwdHits,
+      rcHits,
+      rcSeq,
+      matched: fwdHits.length > 0 || rcHits.length > 0
+    });
+  }
+
+  lastResults = results;
+  renderResults(seq, results);
+}
+
+// ─── Render Results ───────────────────────────────────────────────────────────
+function renderResults(seq, results) {
+  const checkRC = document.getElementById('toggleRC').checked;
+  const matches = results.filter(r => r.matched);
+  const fwdOnly = matches.filter(r => r.fwdHits.length > 0 && r.rcHits.length === 0);
+  const rcOnly  = matches.filter(r => r.rcHits.length > 0 && r.fwdHits.length === 0);
+  const both    = matches.filter(r => r.fwdHits.length > 0 && r.rcHits.length > 0);
+
+  // Summary
+  const summaryParts = [];
+  if (matches.length === 0) {
+    summaryParts.push(`<span class="not-found">No primers detected</span>`);
+  } else {
+    summaryParts.push(`<span class="found">${matches.length}</span> of ${results.length} primers detected`);
+    if (checkRC) {
+      const fwdCount = results.reduce((s,r) => s + r.fwdHits.length, 0);
+      const rcCount  = results.reduce((s,r) => s + r.rcHits.length, 0);
+      if (fwdCount) summaryParts.push(`${fwdCount} fwd hit${fwdCount>1?'s':''}`);
+      if (rcCount)  summaryParts.push(`${rcCount} RC hit${rcCount>1?'s':''}`);
+    }
+  }
+  document.getElementById('resultsSummary').innerHTML = summaryParts.join(' · ');
+
+  // Annotated sequence
+  renderAnnotatedSeq(seq, results, checkRC);
+
+  // Cards
+  renderCards(results, checkRC, 'all');
+
+  document.getElementById('resultsArea').style.display = 'block';
+  document.getElementById('emptyState').style.display = 'none';
+
+  // Reset filter
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  document.querySelector('[data-filter="all"]').classList.add('active');
+}
+
+function renderAnnotatedSeq(seq, results, checkRC) {
+  // Build an array of highlights
+  const highlights = []; // {start, end, type: 'fwd'|'rc', name}
+  for (const r of results) {
+    for (const pos of r.fwdHits) {
+      highlights.push({ start: pos, end: pos + r.primer.seq.length, type: 'fwd', name: r.primer.name });
+    }
+    if (checkRC) {
+      for (const pos of r.rcHits) {
+        highlights.push({ start: pos, end: pos + r.primer.seq.length, type: 'rc', name: r.primer.name });
+      }
+    }
+  }
+
+  if (highlights.length === 0) {
+    document.getElementById('seqDisplay').textContent = seq;
+    return;
+  }
+
+  // Build an annotated string by marking ranges
+  // For overlapping ranges, use the last one added
+  const chars = seq.split('').map(c => ({ c, type: null, name: null }));
+  for (const h of highlights) {
+    for (let i = h.start; i < h.end; i++) {
+      chars[i].type = h.type;
+      chars[i].name = h.name;
+    }
+  }
+
+  // Convert to HTML spans
+  let html = '';
+  let curType = null;
+  let curName = null;
+  for (const ch of chars) {
+    if (ch.type !== curType || ch.name !== curName) {
+      if (curType) html += `</mark>`;
+      if (ch.type) {
+        const title = `${ch.name} (${ch.type === 'rc' ? 'rev comp' : 'forward'})`;
+        html += `<mark class="${ch.type === 'rc' ? 'rc' : ''}" title="${title}">`;
+      }
+      curType = ch.type;
+      curName = ch.name;
+    }
+    html += ch.c;
+  }
+  if (curType) html += `</mark>`;
+
+  document.getElementById('seqDisplay').innerHTML = html;
+}
+
+function renderCards(results, checkRC, filter) {
+  const hideNonMatch = document.getElementById('toggleHide').checked;
+  const list = document.getElementById('resultsList');
+  list.innerHTML = '';
+
+  let visible = results;
+  if (filter === 'match') visible = results.filter(r => r.matched);
+  else if (filter === 'fwd') visible = results.filter(r => r.fwdHits.length > 0);
+  else if (filter === 'rc')  visible = results.filter(r => r.rcHits.length > 0);
+
+  if (hideNonMatch) visible = visible.filter(r => r.matched);
+
+  for (let i = 0; i < visible.length; i++) {
+    const r = visible[i];
+    const card = document.createElement('div');
+    card.className = `result-card ${r.matched ? 'match' : 'no-match'}`;
+    card.style.animationDelay = `${i * 30}ms`;
+
+    let posHTML = '';
+    if (r.fwdHits.length > 0) {
+      posHTML += r.fwdHits.map(p =>
+        `<span class="position-tag fwd">▶ pos ${p+1}–${p+r.primer.seq.length}</span>`
+      ).join('');
+    }
+    if (checkRC && r.rcHits.length > 0) {
+      posHTML += r.rcHits.map(p =>
+        `<span class="position-tag rev">◀ RC pos ${p+1}–${p+r.primer.seq.length}</span>`
+      ).join('');
+    }
+
+    let detailHTML = '';
+    if (r.matched) {
+      detailHTML = `<div class="match-detail">
+        ${r.fwdHits.length > 0 ? `Fwd: <code>${r.primer.seq}</code>` : ''}
+        ${checkRC && r.rcHits.length > 0 ? `&nbsp;&nbsp;RC: <code>${r.rcSeq}</code>` : ''}
+      </div>`;
+    }
+
+    card.innerHTML = `
+      <div class="status-dot"></div>
+      <div class="result-info">
+        <div class="primer-name">${r.primer.name}</div>
+        <div class="primer-seq">${r.primer.seq}</div>
+        <div class="primer-length">${r.primer.len} nt</div>
+        ${detailHTML}
+        ${posHTML ? `<div style="margin-top:8px">${posHTML}</div>` : ''}
+      </div>
+      <div class="result-badge">${r.matched ? (r.fwdHits.length>0 && r.rcHits.length>0 ? 'FWD + RC' : r.fwdHits.length>0 ? 'FORWARD' : 'REV COMP') : 'No match'}</div>
+    `;
+    list.appendChild(card);
+  }
+
+  if (visible.length === 0) {
+    list.innerHTML = `<div class="empty-state" style="padding:40px 0"><p>No primers match the current filter.</p></div>`;
+  }
+}
+
+// ─── Filter ───────────────────────────────────────────────────────────────────
+function applyFilter(filter, btn) {
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  const checkRC = document.getElementById('toggleRC').checked;
+  renderCards(lastResults, checkRC, filter);
+}
+
+// ─── Clear ────────────────────────────────────────────────────────────────────
+function clearAll() {
+  document.getElementById('seqInput').value = '';
+  document.getElementById('seqStats').querySelector('span').textContent = '—';
+  document.getElementById('resultsArea').style.display = 'none';
+  document.getElementById('emptyState').style.display = 'block';
+  lastResults = [];
+}
+
+// ─── DB selector ─────────────────────────────────────────────────────────────
+document.querySelectorAll('.db-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.db-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentDb = btn.dataset.db;
+  });
+});
+
+// ─── Keyboard shortcut ───────────────────────────────────────────────────────
+document.getElementById('seqInput').addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') runSearch();
+});
+</script>
+</body>
+</html>
